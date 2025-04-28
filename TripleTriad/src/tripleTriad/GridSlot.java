@@ -22,7 +22,8 @@ public class GridSlot {
 		this.gridBlock = new Rectangle(getX(), getY(), SLOT_X, SLOT_Y);
 		isCardPlaced = false;
 	}
-	
+
+	//	copy constructor
 	public GridSlot(GridSlot gridSlot) {
 		//this.col = gridSlot.col;
 		//this.row = gridSlot.row;
@@ -32,6 +33,9 @@ public class GridSlot {
 		setPosition();
 		this.gridBlock = new Rectangle(this.getX(), this.getY(), SLOT_X, SLOT_Y);
 		this.isCardPlaced = gridSlot.isCardPlaced;
+		if(gridSlot.isCardPlaced){
+			this.card = new Card(gridSlot.getCard());
+		}
 	}
 	
 	

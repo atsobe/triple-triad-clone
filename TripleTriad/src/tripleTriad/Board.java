@@ -1,11 +1,10 @@
 package tripleTriad;
 
+import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.ArrayList;
-
-import javax.imageio.ImageIO;
 
 public class Board {
 	
@@ -52,6 +51,34 @@ public class Board {
 		this.setCards();
 		this.setDecks();
 		this.setRandomPlayer();
+	}
+
+
+	public Board(Board board){
+		this.image = board.getImage("/board/triple-triad-board");
+		setBoardGrid();
+
+		this.turns = board.turns;
+		this.gameOver = board.gameOver;
+
+		for(GridSlot slot: board.getGridSlots()){
+			this.gridSlots.add(new GridSlot(slot));
+		}
+		for(GridSlot slot: board.activeSlots){
+			this.activeSlots.add(new GridSlot(slot));
+		}
+		for(Card card: board.cardsInPlay){
+			this.cardsInPlay.add(new Card(card));
+		}
+
+		// DECKS
+		this.allCards = new Deck(board.allCards);
+		deckOne = new Deck(board.deckOne);
+		deckTwo = new Deck(board.deckTwo);
+		prevCard = new Card(board.prevCard);
+		activeCard = new Card(board.activeCard);
+		currentColor = board.currentColor;
+		activeDeck = new Deck(board.activeDeck);
 	}
 	
 	public BufferedImage getImage(String imagePath) {

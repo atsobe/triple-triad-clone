@@ -26,6 +26,16 @@ public class Deck {
 			this.deckColor = Color.RED;
 		}
 	}
+
+	//	copy constructor
+	public Deck(Deck deck){
+		this.player = deck.getPlayer();
+		this.deckColor = deck.getColor();
+		this.playerCards = new ArrayList<>();
+		for (Card card : deck.getCards()) {
+			addCard(card);
+		}
+	}
 	
 	public ArrayList<Card> getCards(){
 		return this.playerCards;
@@ -60,7 +70,7 @@ public class Deck {
 	}
 	
 	public void resetDeck() {
-		this.playerCards.removeAll(playerCards);
+		this.playerCards.clear();
 	}
 	
 	

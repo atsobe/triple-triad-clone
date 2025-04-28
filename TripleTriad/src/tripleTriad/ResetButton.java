@@ -13,12 +13,11 @@ public class ResetButton extends JButton {
     public ResetButton(GamePanel gp) {
         super("Reset Game");
 
-        this.gp = gp;
         addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 // Call a method to reset the game state
-                gp.resetGame();
+                gp.board.resetGame();
             }
         });
     }

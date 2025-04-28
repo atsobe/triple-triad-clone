@@ -54,9 +54,7 @@ public class GamePanel extends JPanel implements Runnable {
 	public ArrayList<GridSlot> activeSlots = new ArrayList<>();
 	
 	JLabel turnLabel;
-	private int turns = 0;
 	private String winner;
-	private boolean gameOver = false;
 	
 	
 	public GamePanel() {
@@ -71,15 +69,6 @@ public class GamePanel extends JPanel implements Runnable {
 		// Adding reset button to game panel
 		resetButton = new ResetButton(this);
 		add(resetButton, BorderLayout.SOUTH);
-		
-		// Setting up playing grid
-		this.gridSlots = board.gridSlots;
-		this.activeSlots = board.activeSlots;
-		
-		// Setting up cards and each player's deck
-		this.setCards();
-		this.setDecks();
-		this.setRandomPlayer();
 	}
 	
 	public void launchGame() {
@@ -88,71 +77,52 @@ public class GamePanel extends JPanel implements Runnable {
 	}
 	
 	private void update() {
-		
-		if(!gameOver) {
+		if(!board.isGameOver()) {
 			// If game is NOT over
-			if(mouse.pressed == true) {
+			if(mouse.pressed) {
 				// If mouse is pressed
 				if(activeCard == null) {
 					// If the activeCard is null, check if you can pick up a card
-					for(Card card : activeDeck.getCards()) {
+					for(Card card : board.activeDeck.getCards()) {
 						// If the card is in same position as mouse, pick up
 						if( (mouse.x >= card.getX() && mouse.x < card.getX() + Card.CARD_WIDTH)
 							&& (mouse.y >= card.getY() && mouse.y < card.getY() + Card.CARD_HEIGHT) ) {
 							activeCard = card;
 							prevCard = card;
-							//activeCard.setInPlay(false);
-							/* for(GridSlot gridSlot: gridSlots) {
-								if(gridSlot.getCard() == activeCard) {
-									gridSlot.setCard(null);
-									gridSlot.isCardPlaced = false;
-								} 
-							} */
 						}
 					}
 				}
 				else {
 					// If there is active card
-					containingSlot = findContainingSlot(activeCard, gridSlots);
+					containingSlot = findContainingSlot(activeCard, board.gridSlots);
 					// If player is holding a card, simulate move
 					simulate();
 				}
 			}
-			
-			if(mouse.pressed == false) {
+			if(!mouse.pressed) {
 				//	If mouse is not pressed
 				if(activeCard != null) {
-					if(isCollision == true) {
+					if(isCollision) {
 						//	If collision is detected with the active card
-						containingSlot = findContainingSlot(activeCard, gridSlots);
-						if(containingSlot.isCardPlaced == false) {
-							Card copyCard = new Card(activeCard);
-							
-							copyCard.moveCardTo(containingSlot);
-							containingSlot.setCard(copyCard);
-							cardsInPlay.add(copyCard);
-							activeSlots.add(containingSlot);
-							activeDeck.removeCard(activeCard);
-							
-							checkCardCapture(containingSlot);
-							changePlayer();
+						containingSlot = findContainingSlot(activeCard, board.gridSlots);
+						if(!containingSlot.isCardPlaced) {
+							board.playCard(activeCard, containingSlot);
 						}
 						else {
 							activeCard.moveCardBack();
 						}
-	
 					}
 					else {
 						activeCard.moveCardBack();
 					}
 					activeCard = null;
+					containingSlot = null;
+					isCollision = false;
 				}
 			}
 		}
-		
-		if(turns == 9) {
-			this.gameOver = true;
-			this.winner = findWinner();
+		else {
+			this.winner = board.findWinner();
 		}
 	}
 	
@@ -164,126 +134,23 @@ public class GamePanel extends JPanel implements Runnable {
 		activeCard.setY(mouse.y - Card.CARD_HEIGHT / 2);
 		activeCard.setBoundRect();	//set active card's bounding rectangle every time its  new position is set
 		
-		for(GridSlot gridSlot : gridSlots) {
-			if(isCollision(activeCard, gridSlot) == true)	{
+		for(GridSlot gridSlot : board.gridSlots) {
+			if(isCollision(activeCard, gridSlot))	{
 				this.isCollision = isCollision(activeCard, gridSlot);
 				break;	// to stop iterating through arrayList, which would keep updating isCollision variable 
 			}
 		}
 	}
-	
-	private void setCards() {
-		
-		Card chubbyChoco = new Card("Chubby Chocobo", 8, CardRank.Nine, CardRank.Four, CardRank.Four, CardRank.Eight, "chubby-chocobo", 90, 20);
-		Card squall = new Card("Squall", 10, CardRank.Nine, CardRank.Four, CardRank.Ten, CardRank.Six, "squall", 90, 140);
-		Card quistis = new Card("Quistis", 10, CardRank.Two, CardRank.Six, CardRank.Nine, CardRank.Ten, "quistis", 90, 260);
-		Card diablos = new Card("Diablos", 9, CardRank.Three, CardRank.Ten, CardRank.Five, CardRank.Eight, "diablos", 90, 380);
-		Card pupu = new Card("PuPu", 5, CardRank.One, CardRank.Ten, CardRank.Three, CardRank.Two, "pupu", 90, 500);
-		
-		this.allCards.addCard(chubbyChoco);
-		this.allCards.addCard(squall);
-		this.allCards.addCard(quistis);
-		this.allCards.addCard(diablos);
-		this.allCards.addCard(pupu);
-	}
-	
-	private void setDecks() {
-		//Setting up deck for player one
-		for(Card card: allCards.getCards()) {
-			deckOne.addCard(card);
-		}
-		
-		//Setting up deck for player two
-		for(Card card: allCards.getCards()) {
-			deckTwo.addCard(card);
-		}
-	}
-	
-	private void setRandomPlayer() {
-		int random = (int) (Math.random() * 100);
-		
-		if(random <= 49) {
-			this.activeDeck = deckOne;
-			this.currentColor = Card.Color.BLUE;
-		}
-		else {
-			this.activeDeck = deckTwo;
-			this.currentColor = Card.Color.RED;
-		}
-	}
-	
-	private void changePlayer() {
-		isCollision = false;
-		if(activeDeck == deckOne) {
-			activeDeck = deckTwo;
-			currentColor = Card.Color.RED;
-		}
-		else {
-			activeDeck = deckOne;
-			currentColor = Card.Color.BLUE;
-		}
-		turns++;
-	}
-	
-	private String findWinner() {
-		int blueCards = 0;
-		String winner = "";
-		for(Card cardInPlay: cardsInPlay) {
-			if(cardInPlay.getCardColor() == Card.Color.BLUE) {
-				blueCards++;
-			}
-		}
-		
-		for(Card card: deckOne.getCards()) {
-			if(card.getCardColor() == Card.Color.BLUE) {
-				blueCards++;
-			}
-		}
-		
-		for(Card card: deckTwo.getCards()) {
-			if(card.getCardColor() == Card.Color.BLUE) {
-				blueCards++;
-			}
-		}
-		
-		if(blueCards > 5) {
-			winner = "Blue";	//Blue Wins
-		}
-		else if(blueCards  < 5) {
-			winner = "Red";	//Red Wins
-		}
-		else if(blueCards == 5) {
-			winner = "Draw";	//No winner
-		}
-		return winner;
-	}
-	
-	public void resetGame() {
-		for(GridSlot gridSlot: activeSlots) {
-			gridSlot.isCardPlaced = false;
-		}
-		
-		deckOne.resetDeck();
-		deckTwo.resetDeck();
-		cardsInPlay.removeAll(cardsInPlay);
-		allCards.resetDeck();
-		setCards();
-		setDecks();
-		gameOver = false;
-		turns = 0;
-		winner = null;
-		//currentColor = Card.Color.BLUE;
-		//activeDeck = deckOne;
-		setRandomPlayer();
-	}
+
 	
 	private boolean isCollision(Card card, GridSlot gridSlot) {
 		return card.getBoundRect().intersects(gridSlot.getRect());
 	}
+
 	
 	private GridSlot findContainingSlot(Card card, ArrayList<GridSlot> gridSlots) {
 		double maxIntersectArea = 0;
-		GridSlot containingSlot = null;
+		GridSlot outputSlot = null;
 		
 		for(GridSlot gridSlot : gridSlots) {
 			if(isCollision(card, gridSlot)) {
@@ -292,228 +159,23 @@ public class GamePanel extends JPanel implements Runnable {
 				
 				if (intersectArea > maxIntersectArea) {
 	                maxIntersectArea = intersectArea;
-	                containingSlot = gridSlot;
+					outputSlot = gridSlot;
 	            }
 			}
 		}
-		return containingSlot;
+		return outputSlot;
 	}
-	
-	private void checkCardCapture(GridSlot containingSlot) {
-		if(containingSlot != null) {
-			switch(containingSlot.getPosition()) {
-			case 1:
-				for(GridSlot activeSlot: activeSlots) {
-					if(activeSlot.getPosition() == 2 && activeSlot.getCard() != null 
-						&& activeSlot.getCard().getCardColor() != containingSlot.getCard().getCardColor()) {
-						if(containingSlot.getCard().getCardRankValue(CardSide.RIGHT) > activeSlot.getCard().getCardRankValue(CardSide.LEFT)) {
-							activeSlot.card.flipCardColor();
-						}
-					}
-					if(activeSlot.getPosition() == 4 && activeSlot.getCard() != null 
-						&& activeSlot.getCard().getCardColor() != containingSlot.getCard().getCardColor()) {
-						if(containingSlot.getCard().getCardRankValue(CardSide.BOTTOM) > activeSlot.getCard().getCardRankValue(CardSide.TOP)) {
-							activeSlot.card.flipCardColor();
-						}
-					}
-				}
-				break;
-			case 2:
-				for(GridSlot activeSlot: activeSlots) {
-					if(activeSlot.getPosition() == 1 && activeSlot.getCard() != null 
-						&& activeSlot.getCard().getCardColor() != containingSlot.getCard().getCardColor()) {
-						if(containingSlot.getCard().getCardRankValue(CardSide.LEFT) > activeSlot.getCard().getCardRankValue(CardSide.RIGHT)) {
-							activeSlot.card.flipCardColor();
-						}
-					}
-					if(activeSlot.getPosition() == 3 && activeSlot.getCard() != null 
-						&& activeSlot.getCard().getCardColor() != containingSlot.getCard().getCardColor()) {
-						if(containingSlot.getCard().getCardRankValue(CardSide.RIGHT) > activeSlot.getCard().getCardRankValue(CardSide.LEFT)) {
-							activeSlot.card.flipCardColor();
-						}
-					}
-					if(activeSlot.getPosition() == 5 && activeSlot.getCard() != null 
-							&& activeSlot.getCard().getCardColor() != containingSlot.getCard().getCardColor()) {
-							if(containingSlot.getCard().getCardRankValue(CardSide.BOTTOM) > activeSlot.getCard().getCardRankValue(CardSide.TOP)) {
-								activeSlot.card.flipCardColor();
-							}
-						}
-				}
-				break;
-			case 3:
-				for(GridSlot activeSlot: activeSlots) {
-					if(activeSlot.getPosition() == 2 && activeSlot.getCard() != null 
-						&& activeSlot.getCard().getCardColor() != containingSlot.getCard().getCardColor()) {
-						if(containingSlot.getCard().getCardRankValue(CardSide.LEFT) > activeSlot.getCard().getCardRankValue(CardSide.RIGHT)) {
-							//activeSlot.card.flipCardColor(activeSlot.getCard().getCardColor());
-							activeSlot.card.flipCardColor();
-						}
-					}
-					if(activeSlot.getPosition() == 6 && activeSlot.getCard() != null 
-						&& activeSlot.getCard().getCardColor() != containingSlot.getCard().getCardColor()) {
-						if(containingSlot.getCard().getCardRankValue(CardSide.BOTTOM) > activeSlot.getCard().getCardRankValue(CardSide.TOP)) {
-							//activeSlot.card.flipCardColor(activeSlot.getCard().getCardColor());
-							activeSlot.card.flipCardColor();
-						}
-					}
-				}
-				break;
-			case 4:
-				for(GridSlot activeSlot: activeSlots) {
-					if(activeSlot.getPosition() == 1 && activeSlot.getCard() != null 
-						&& activeSlot.getCard().getCardColor() != containingSlot.getCard().getCardColor()) {
-						if(containingSlot.getCard().getCardRankValue(CardSide.TOP) > activeSlot.getCard().getCardRankValue(CardSide.BOTTOM)) {
-							//activeSlot.card.flipCardColor(activeSlot.getCard().getCardColor());
-							activeSlot.card.flipCardColor();
-						}
-					}
-					if(activeSlot.getPosition() == 5 && activeSlot.getCard() != null 
-						&& activeSlot.getCard().getCardColor() != containingSlot.getCard().getCardColor()) {
-						if(containingSlot.getCard().getCardRankValue(CardSide.RIGHT) > activeSlot.getCard().getCardRankValue(CardSide.LEFT)) {
-							//activeSlot.card.flipCardColor(activeSlot.getCard().getCardColor());
-							activeSlot.card.flipCardColor();
-						}
-					}
-					if(activeSlot.getPosition() == 7 && activeSlot.getCard() != null 
-							&& activeSlot.getCard().getCardColor() != containingSlot.getCard().getCardColor()) {
-							if(containingSlot.getCard().getCardRankValue(CardSide.BOTTOM) > activeSlot.getCard().getCardRankValue(CardSide.TOP)) {
-								//activeSlot.card.flipCardColor(activeSlot.getCard().getCardColor());
-								activeSlot.card.flipCardColor();
-							}
-						}
-				}
-				break;
-			case 5:
-				for(GridSlot activeSlot: activeSlots) {
-					if(activeSlot.getPosition() == 2 && activeSlot.getCard() != null 
-						&& activeSlot.getCard().getCardColor() != containingSlot.getCard().getCardColor()) {
-						if(containingSlot.getCard().getCardRankValue(CardSide.TOP) > activeSlot.getCard().getCardRankValue(CardSide.BOTTOM)) {
-							//activeSlot.card.flipCardColor(activeSlot.getCard().getCardColor());
-							activeSlot.card.flipCardColor();
-						}
-					}
-					if(activeSlot.getPosition() == 4 && activeSlot.getCard() != null 
-						&& activeSlot.getCard().getCardColor() != containingSlot.getCard().getCardColor()) {
-						if(containingSlot.getCard().getCardRankValue(CardSide.LEFT) > activeSlot.getCard().getCardRankValue(CardSide.RIGHT)) {
-							//activeSlot.card.flipCardColor(activeSlot.getCard().getCardColor());
-							activeSlot.card.flipCardColor();
-						}
-					}
-					if(activeSlot.getPosition() == 6 && activeSlot.getCard() != null 
-							&& activeSlot.getCard().getCardColor() != containingSlot.getCard().getCardColor()) {
-							if(containingSlot.getCard().getCardRankValue(CardSide.RIGHT) > activeSlot.getCard().getCardRankValue(CardSide.LEFT)) {
-								//activeSlot.card.flipCardColor(activeSlot.getCard().getCardColor());
-								activeSlot.card.flipCardColor();
-							}
-						}
-					if(activeSlot.getPosition() == 8 && activeSlot.getCard() != null 
-							&& activeSlot.getCard().getCardColor() != containingSlot.getCard().getCardColor()) {
-							if(containingSlot.getCard().getCardRankValue(CardSide.BOTTOM) > activeSlot.getCard().getCardRankValue(CardSide.TOP)) {
-								//activeSlot.card.flipCardColor(activeSlot.getCard().getCardColor());
-								activeSlot.card.flipCardColor();
-							}
-						}
-				}
-				break;
-			case 6:
-				for(GridSlot activeSlot: activeSlots) {
-					if(activeSlot.getPosition() == 3 && activeSlot.getCard() != null 
-						&& activeSlot.getCard().getCardColor() != containingSlot.getCard().getCardColor()) {
-						if(containingSlot.getCard().getCardRankValue(CardSide.TOP) > activeSlot.getCard().getCardRankValue(CardSide.BOTTOM)) {
-							//activeSlot.card.flipCardColor(activeSlot.getCard().getCardColor());
-							activeSlot.card.flipCardColor();
-						}
-					}
-					if(activeSlot.getPosition() == 5 && activeSlot.getCard() != null 
-						&& activeSlot.getCard().getCardColor() != containingSlot.getCard().getCardColor()) {
-						if(containingSlot.getCard().getCardRankValue(CardSide.LEFT) > activeSlot.getCard().getCardRankValue(CardSide.RIGHT)) {
-							//activeSlot.card.flipCardColor(activeSlot.getCard().getCardColor());
-							activeSlot.card.flipCardColor();
-						}
-					}
-					if(activeSlot.getPosition() == 9 && activeSlot.getCard() != null 
-							&& activeSlot.getCard().getCardColor() != containingSlot.getCard().getCardColor()) {
-							if(containingSlot.getCard().getCardRankValue(CardSide.BOTTOM) > activeSlot.getCard().getCardRankValue(CardSide.TOP)) {
-								//activeSlot.card.flipCardColor(activeSlot.getCard().getCardColor());
-								activeSlot.card.flipCardColor();
-							}
-						}
-				}
-				break;
-			case 7:
-				for(GridSlot activeSlot: activeSlots) {
-					if(activeSlot.getPosition() == 4 && activeSlot.getCard() != null 
-						&& activeSlot.getCard().getCardColor() != containingSlot.getCard().getCardColor()) {
-						if(containingSlot.getCard().getCardRankValue(CardSide.TOP) > activeSlot.getCard().getCardRankValue(CardSide.BOTTOM)) {
-							//activeSlot.card.flipCardColor(activeSlot.getCard().getCardColor());
-							activeSlot.card.flipCardColor();
-						}
-					}
-					if(activeSlot.getPosition() == 8 && activeSlot.getCard() != null 
-						&& activeSlot.getCard().getCardColor() != containingSlot.getCard().getCardColor()) {
-						if(containingSlot.getCard().getCardRankValue(CardSide.RIGHT) > activeSlot.getCard().getCardRankValue(CardSide.LEFT)) {
-							//activeSlot.card.flipCardColor(activeSlot.getCard().getCardColor());
-							activeSlot.card.flipCardColor();
-						}
-					}
-				}
-				break;
-			case 8:
-				for(GridSlot activeSlot: activeSlots) {
-					if(activeSlot.getPosition() == 7 && activeSlot.getCard() != null 
-						&& activeSlot.getCard().getCardColor() != containingSlot.getCard().getCardColor()) {
-						if(containingSlot.getCard().getCardRankValue(CardSide.LEFT) > activeSlot.getCard().getCardRankValue(CardSide.RIGHT)) {
-							//activeSlot.card.flipCardColor(activeSlot.getCard().getCardColor());
-							activeSlot.card.flipCardColor();
-						}
-					}
-					if(activeSlot.getPosition() == 5 && activeSlot.getCard() != null 
-						&& activeSlot.getCard().getCardColor() != containingSlot.getCard().getCardColor()) {
-						if(containingSlot.getCard().getCardRankValue(CardSide.TOP) > activeSlot.getCard().getCardRankValue(CardSide.BOTTOM)) {
-							//activeSlot.card.flipCardColor(activeSlot.getCard().getCardColor());
-							activeSlot.card.flipCardColor();
-						}
-					}
-					if(activeSlot.getPosition() == 9 && activeSlot.getCard() != null 
-							&& activeSlot.getCard().getCardColor() != containingSlot.getCard().getCardColor()) {
-							if(containingSlot.getCard().getCardRankValue(CardSide.RIGHT) > activeSlot.getCard().getCardRankValue(CardSide.LEFT)) {
-								//activeSlot.card.flipCardColor(activeSlot.getCard().getCardColor());
-								activeSlot.card.flipCardColor();
-							}
-						}
-				}
-				break;
-			case 9:
-				for(GridSlot activeSlot: activeSlots) {
-					if(activeSlot.getPosition() == 6 && activeSlot.getCard() != null 
-						&& activeSlot.getCard().getCardColor() != containingSlot.getCard().getCardColor()) {
-						if(containingSlot.getCard().getCardRankValue(CardSide.TOP) > activeSlot.getCard().getCardRankValue(CardSide.BOTTOM)) {
-							//activeSlot.card.flipCardColor(activeSlot.getCard().getCardColor());
-							activeSlot.card.flipCardColor();
-						}
-					}
-					if(activeSlot.getPosition() == 8 && activeSlot.getCard() != null 
-						&& activeSlot.getCard().getCardColor() != containingSlot.getCard().getCardColor()) {
-						if(containingSlot.getCard().getCardRankValue(CardSide.LEFT) > activeSlot.getCard().getCardRankValue(CardSide.RIGHT)) {
-							//activeSlot.card.flipCardColor(activeSlot.getCard().getCardColor());
-							activeSlot.card.flipCardColor();
-						}
-					}
-				}
-				break;
-			}
-		}
-	}
+
 	
 	public void paintComponent(Graphics g) {
 		super.paintComponent(g);
 		Graphics2D g2 = (Graphics2D) g;
 		
 		// Drawing board
-		board.draw(g2);
+		board.drawBoardBase(g2);
 		
 		// Drawing containing slot
-		if(containingSlot != null && isCollision == true && mouse.pressed == true && prevCard.getCardColor() == currentColor) {
+		if(containingSlot != null && this.isCollision && mouse.pressed && prevCard.getCardColor() == board.currentColor) {
 			g2.setColor(Color.white);
 			g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.7f));
 			g2.fillRect(containingSlot.getX(), containingSlot.getY(), GridSlot.SLOT_X, GridSlot.SLOT_Y);
@@ -522,17 +184,7 @@ public class GamePanel extends JPanel implements Runnable {
 		}
 		
 		//	Drawing cards to screen
-		for(Card cardOne: this.deckOne.getCards()) {
-			cardOne.draw(g2);
-		}
-		
-		for(Card cardTwo: this.deckTwo.getCards()) {
-			cardTwo.draw(g2);
-		}
-		
-		for(Card cardInPlay: this.cardsInPlay) {
-			cardInPlay.draw(g2);
-		}
+		board.drawBoardCards(g2);
 		
 		//Drawing mouse
 		//mouse.draw(g);
@@ -552,8 +204,8 @@ public class GamePanel extends JPanel implements Runnable {
 		g2.setColor(Color.white);
 		
 		// Displaying Turn Order
-		if(!gameOver) {
-			if(activeDeck.getPlayer() == 1) {
+		if(!board.isGameOver()) {
+			if(board.activeDeck.getPlayer() == 1) {
 				g2.drawString("Blue's turn", 1200, 750);
 			}
 			else {
@@ -562,11 +214,11 @@ public class GamePanel extends JPanel implements Runnable {
 		}
 		
 		// Displaying Winner when game is over
-		if(gameOver) {
+		if(board.isGameOver()) {
 			Font gameOverFont = new Font("Arial", Font.PLAIN, 90);
 			g2.setFont(gameOverFont);
 			g2.setColor(Color.white);
-			if(winner == "Draw") {
+			if(winner!=null && winner.equals("Draw")) {
 				g2.drawString(winner + "!", 500, 850);
 			}
 			else {

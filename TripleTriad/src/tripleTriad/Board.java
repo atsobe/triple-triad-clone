@@ -5,6 +5,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 public class Board {
 	
@@ -460,5 +461,44 @@ public class Board {
 					break;
 			}
 		}
+	}
+
+	//	Get all possible moves for active player
+	public List<Move> getMoves(){
+		List<Move> possibleMoves = new ArrayList<>();
+		List<Integer> activeGridPos = new ArrayList<>();
+		for(GridSlot slot: activeSlots){
+			activeGridPos.add(slot.getPosition());
+		}
+
+		List<GridSlot> possibleSlots = new ArrayList<>();
+		for (GridSlot slot: gridSlots){
+			possibleSlots.add(new GridSlot(slot));
+		}
+		possibleSlots.removeIf(slot -> activeGridPos.contains(slot.getPosition()));
+
+		for(Card card: activeDeck.getCards()){
+			for(GridSlot slot: possibleSlots){
+				possibleMoves.add(new Move(slot, card));
+			}
+		}
+		return possibleMoves;
+	}
+
+	//	Return AI cards - Player cards
+	public int getEnemyScore(){
+		int blueCards = 0;
+        List<Card> currentCards = new ArrayList<>(cardsInPlay);
+		currentCards.addAll(deckOne.getCards());
+		currentCards.addAll(deckTwo.getCards());
+
+		for(Card card: currentCards){
+			if(card.getCardColor() == Card.Color.BLUE) {
+				blueCards++;
+			}
+		}
+		int redCards = 10 - blueCards;
+
+		return redCards - blueCards;
 	}
 }

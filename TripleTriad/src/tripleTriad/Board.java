@@ -5,6 +5,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class Board {
@@ -22,7 +23,7 @@ public class Board {
 	public int x, y;
 	public int col, row, preCol, preRow;
 
-	private int turns = 0;
+	public int turns = 0;
 	private String winner;
 	private boolean gameOver = false;
 
@@ -57,7 +58,7 @@ public class Board {
 
 	public Board(Board board){
 		this.image = board.getImage("/board/triple-triad-board");
-		setBoardGrid();
+		//setBoardGrid();
 
 		this.turns = board.turns;
 		this.gameOver = board.gameOver;
@@ -65,8 +66,8 @@ public class Board {
 		for(GridSlot slot: board.getGridSlots()){
 			this.gridSlots.add(new GridSlot(slot));
 		}
-		for(GridSlot slot: board.activeSlots){
-			this.activeSlots.add(new GridSlot(slot));
+		for(GridSlot slot: this.gridSlots){
+			if(slot.isCardPlaced) this.activeSlots.add(slot);
 		}
 		for(Card card: board.cardsInPlay){
 			this.cardsInPlay.add(new Card(card));
@@ -74,12 +75,12 @@ public class Board {
 
 		// DECKS
 		this.allCards = new Deck(board.allCards);
-		deckOne = new Deck(board.deckOne);
-		deckTwo = new Deck(board.deckTwo);
-		prevCard = new Card(board.prevCard);
-		activeCard = new Card(board.activeCard);
-		currentColor = board.currentColor;
-		activeDeck = new Deck(board.activeDeck);
+		this.deckOne = new Deck(board.deckOne);
+		this.deckTwo = new Deck(board.deckTwo);
+		if(board.prevCard != null) this.prevCard = new Card(board.prevCard);
+		if(board.activeCard != null) this.activeCard = new Card(board.activeCard);
+		this.currentColor = board.currentColor;
+		this.activeDeck = new Deck(board.activeDeck);
 	}
 	
 	public BufferedImage getImage(String imagePath) {
@@ -463,25 +464,84 @@ public class Board {
 		}
 	}
 
+	public List<Integer> findOpenAdjacentSlots(GridSlot slot) {
+		List<Integer> adjSlots = new ArrayList<>();
+		// .get() uses index of list NOT "position" in grid so pos 1 is index 0 in list.
+		switch (slot.getPosition()) {
+			case 1 -> {
+				if (!gridSlots.get(1).isCardPlaced) adjSlots.add(1);
+				if (!gridSlots.get(3).isCardPlaced) adjSlots.add(3);
+			}
+			case 2 -> {
+				if (!gridSlots.get(0).isCardPlaced) adjSlots.add(0);
+				if (!gridSlots.get(2).isCardPlaced) adjSlots.add(2);
+				if (!gridSlots.get(4).isCardPlaced) adjSlots.add(4);
+			}
+			case 3 -> {
+				if (!gridSlots.get(1).isCardPlaced) adjSlots.add(1);
+				if (!gridSlots.get(5).isCardPlaced) adjSlots.add(5);
+			}
+			case 4 -> {
+				if (!gridSlots.get(0).isCardPlaced) adjSlots.add(0);
+				if (!gridSlots.get(4).isCardPlaced) adjSlots.add(4);
+				if (!gridSlots.get(6).isCardPlaced) adjSlots.add(6);
+			}
+			case 5 -> {
+				if (!gridSlots.get(1).isCardPlaced) adjSlots.add(1);
+				if (!gridSlots.get(3).isCardPlaced) adjSlots.add(3);
+				if (!gridSlots.get(5).isCardPlaced) adjSlots.add(5);
+				if (!gridSlots.get(7).isCardPlaced) adjSlots.add(7);
+			}
+			case 6 -> {
+				if (!gridSlots.get(2).isCardPlaced) adjSlots.add(2);
+				if (!gridSlots.get(4).isCardPlaced) adjSlots.add(4);
+				if (!gridSlots.get(8).isCardPlaced) adjSlots.add(8);
+			}
+			case 7 -> {
+				if (!gridSlots.get(3).isCardPlaced) adjSlots.add(3);
+				if (!gridSlots.get(7).isCardPlaced) adjSlots.add(7);
+			}
+			case 8 -> {
+				if (!gridSlots.get(4).isCardPlaced) adjSlots.add(4);
+				if (!gridSlots.get(6).isCardPlaced) adjSlots.add(6);
+				if (!gridSlots.get(8).isCardPlaced) adjSlots.add(8);
+			}
+			case 9 -> {
+				if (!gridSlots.get(5).isCardPlaced) adjSlots.add(5);
+				if (!gridSlots.get(7).isCardPlaced) adjSlots.add(7);
+			}
+		}
+		return adjSlots;
+	}
+
 	//	Get all possible moves for active player
 	public List<Move> getMoves(){
 		List<Move> possibleMoves = new ArrayList<>();
 		List<Integer> activeGridPos = new ArrayList<>();
 		for(GridSlot slot: activeSlots){
-			activeGridPos.add(slot.getPosition());
+			if(slot.getCard() != null) activeGridPos.add(slot.getPosition());
 		}
 
 		List<GridSlot> possibleSlots = new ArrayList<>();
 		for (GridSlot slot: gridSlots){
-			possibleSlots.add(new GridSlot(slot));
+			possibleSlots.add(slot);
 		}
+		//System.out.println("possible slots size before: " + possibleSlots.size());
 		possibleSlots.removeIf(slot -> activeGridPos.contains(slot.getPosition()));
+		//possibleSlots.removeIf(slot -> slot.isCardPlaced);
+		//System.out.println("possible slots size after: " + possibleSlots.size());
 
 		for(Card card: activeDeck.getCards()){
 			for(GridSlot slot: possibleSlots){
 				possibleMoves.add(new Move(slot, card));
 			}
 		}
+
+//		System.out.println("ActiveDeck cards: " + activeDeck.getCards().size());
+//		System.out.println("All grid slots: " + gridSlots.size());
+//		System.out.println("Slots with cards: " +
+//				gridSlots.stream().filter(s -> s.getCard() != null).count());
+
 		return possibleMoves;
 	}
 
@@ -500,5 +560,65 @@ public class Board {
 		int redCards = 10 - blueCards;
 
 		return redCards - blueCards;
+	}
+
+	public int heuristic(){
+		int cornerScore = 0;
+		int edgeScore = 0;
+		List<Integer> corners = Arrays.asList(1, 3, 7, 9);
+		for(GridSlot slot: activeSlots){
+			// && slot.getCard().getCardColor() == Card.Color.RED
+			List<Integer> adjSlots = findOpenAdjacentSlots(slot);
+			edgeScore += slot.getCard().getCardColor() == Card.Color.RED ? -adjSlots.size() : adjSlots.size();
+
+			if(corners.contains(slot.getPosition())){
+				//System.out.println("corner detected");
+				//if(this.activeDeck.getPlayer() == 1) cornerScore -= 2;
+				//else cornerScore += 2;
+				cornerScore = 1;
+
+				switch(slot.getPosition()){
+					// top-left corner
+					case 1 -> {
+						if(slot.getCard().getCardRankValue(Card.CardSide.RIGHT) >= 7) {
+							cornerScore += slot.getCard().getCardColor() == Card.Color.RED ? 2 : -2;
+						}
+						if(slot.getCard().getCardRankValue(Card.CardSide.BOTTOM) >= 7) {
+							cornerScore += slot.getCard().getCardColor() == Card.Color.RED ? 2 : -2;
+						}
+					}
+					// top-right corner
+					case 3 -> {
+						if(slot.getCard().getCardRankValue(Card.CardSide.LEFT) >= 7) {
+							cornerScore += slot.getCard().getCardColor() == Card.Color.RED ? 2 : -2;
+						}
+						if(slot.getCard().getCardRankValue(Card.CardSide.BOTTOM) >= 7) {
+							cornerScore += slot.getCard().getCardColor() == Card.Color.RED ? 2 : -2;
+						}
+					}
+					// bottom-left corner
+					case 7 -> {
+						if(slot.getCard().getCardRankValue(Card.CardSide.RIGHT) >= 7) {
+							cornerScore += slot.getCard().getCardColor() == Card.Color.RED ? 2 : -2;
+						}
+						if(slot.getCard().getCardRankValue(Card.CardSide.TOP) >= 7) {
+							cornerScore += slot.getCard().getCardColor() == Card.Color.RED ? 2 : -2;
+						}
+					}
+					// bottom-right corner
+					case 9 -> {
+						if(slot.getCard().getCardRankValue(Card.CardSide.LEFT) >= 7) {
+							cornerScore += slot.getCard().getCardColor() == Card.Color.RED ? 2 : -2;
+						}
+						if(slot.getCard().getCardRankValue(Card.CardSide.TOP) >= 7) {
+							cornerScore += slot.getCard().getCardColor() == Card.Color.RED ? 2 : -2;
+						}
+					}
+				}
+			}
+		}
+		//System.out.println("Enemy Score = " + getEnemyScore());
+		if(this.turns == 0) return 3 * cornerScore + edgeScore;
+		return (7 * getEnemyScore()) + (3 * cornerScore) + edgeScore;
 	}
 }

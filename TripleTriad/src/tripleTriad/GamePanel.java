@@ -55,6 +55,7 @@ public class GamePanel extends JPanel implements Runnable {
 	
 	JLabel turnLabel;
 	private String winner;
+	private EnemyAI enemy = new EnemyAI(2);
 	
 	
 	public GamePanel() {
@@ -79,46 +80,58 @@ public class GamePanel extends JPanel implements Runnable {
 	private void update() {
 		if(!board.isGameOver()) {
 			// If game is NOT over
-			if(mouse.pressed) {
-				// If mouse is pressed
-				if(activeCard == null) {
-					// If the activeCard is null, check if you can pick up a card
-					for(Card card : board.activeDeck.getCards()) {
-						// If the card is in same position as mouse, pick up
-						if( (mouse.x >= card.getX() && mouse.x < card.getX() + Card.CARD_WIDTH)
-							&& (mouse.y >= card.getY() && mouse.y < card.getY() + Card.CARD_HEIGHT) ) {
-							activeCard = card;
-							prevCard = card;
+			if(board.activeDeck.getPlayer() == 1) {
+				if (mouse.pressed) {
+					// If mouse is pressed
+					if (activeCard == null) {
+						// If the activeCard is null, check if you can pick up a card
+						for (Card card : board.activeDeck.getCards()) {
+							// If the card is in same position as mouse, pick up
+							if ((mouse.x >= card.getX() && mouse.x < card.getX() + Card.CARD_WIDTH)
+									&& (mouse.y >= card.getY() && mouse.y < card.getY() + Card.CARD_HEIGHT)) {
+								activeCard = card;
+								prevCard = card;
+							}
 						}
+					} else {
+						// If there is active card
+						containingSlot = findContainingSlot(activeCard, board.gridSlots);
+						// If player is holding a card, simulate move
+						simulate();
 					}
 				}
-				else {
-					// If there is active card
-					containingSlot = findContainingSlot(activeCard, board.gridSlots);
-					// If player is holding a card, simulate move
-					simulate();
-				}
-			}
-			if(!mouse.pressed) {
-				//	If mouse is not pressed
-				if(activeCard != null) {
-					if(isCollision) {
-						//	If collision is detected with the active card
-						containingSlot = findContainingSlot(activeCard, board.gridSlots);
-						if(!containingSlot.isCardPlaced) {
-							board.playCard(activeCard, containingSlot);
-						}
-						else {
+				if (!mouse.pressed) {
+					//	If mouse is not pressed
+					if (activeCard != null) {
+						if (isCollision) {
+							//	If collision is detected with the active card
+							containingSlot = findContainingSlot(activeCard, board.gridSlots);
+							if (!containingSlot.isCardPlaced) {
+								board.playCard(activeCard, containingSlot);
+								System.out.println("Enemy Score = " + board.getEnemyScore());
+							} else {
+								activeCard.moveCardBack();
+							}
+						} else {
 							activeCard.moveCardBack();
 						}
+						activeCard = null;
+						containingSlot = null;
+						isCollision = false;
 					}
-					else {
-						activeCard.moveCardBack();
-					}
-					activeCard = null;
-					containingSlot = null;
-					isCollision = false;
 				}
+			}
+			else {
+				Move enemyMove = enemy.findMove(board, enemy.depth);
+				//Move enemyMove = enemy.findMoveIDS(board);
+				//Move enemyMove = board.getMoves().getLast();
+				board.playCard(enemyMove.card, enemyMove.slot);
+				for(GridSlot slot: board.gridSlots){
+					if(slot.getPosition() == 9 && enemyMove.slot.getPosition() == 9){
+						System.out.println(slot.isCardPlaced);
+					}
+				}
+				System.out.println("Enemy Score = " + board.getEnemyScore());
 			}
 		}
 		else {

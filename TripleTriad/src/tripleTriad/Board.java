@@ -567,9 +567,11 @@ public class Board {
 		int edgeScore = 0;
 		List<Integer> corners = Arrays.asList(1, 3, 7, 9);
 		for(GridSlot slot: activeSlots){
-			// && slot.getCard().getCardColor() == Card.Color.RED
 			List<Integer> adjSlots = findOpenAdjacentSlots(slot);
-			edgeScore += slot.getCard().getCardColor() == Card.Color.RED ? -adjSlots.size() : adjSlots.size();
+			if(adjSlots.size() > 1){
+				if(slot.getCard().getCardColor() == Card.Color.RED) edgeScore -= 2;
+				else edgeScore += 2;
+			}
 
 			if(corners.contains(slot.getPosition())){
 				//System.out.println("corner detected");
@@ -618,7 +620,7 @@ public class Board {
 			}
 		}
 		//System.out.println("Enemy Score = " + getEnemyScore());
-		if(this.turns == 0) return 3 * cornerScore + edgeScore;
-		return (7 * getEnemyScore()) + (3 * cornerScore) + edgeScore;
+		if(this.turns == 0) return 3 * cornerScore;
+		return (5 * getEnemyScore()) + (3 * cornerScore) + edgeScore;
 	}
 }

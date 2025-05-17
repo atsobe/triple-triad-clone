@@ -8,6 +8,7 @@ public class EnemyAI {
     public int depth;
     private final long TIME_LIMIT_MS = 15000;
     private int num_moves = 0;
+    private int num_pruned = 0;
 
     public EnemyAI(int depth){
         this.depth = depth;
@@ -20,8 +21,8 @@ public class EnemyAI {
         List<Move> moves = board.getMoves();
         //Board newBoard = new Board(board);
         //int dynamicDepth = Math.min(1 + board.turns / 3, depth);
-        //int dynamicDepth = board.turns <= 4 ? 0 : depth;
-        int dynamicDepth = depth;
+        int dynamicDepth = board.turns < 4 ? 0 : depth;
+        //int dynamicDepth = depth;
 
         // Sort from moves with cards of highest level to lowest
         moves.sort(Comparator.comparingInt((Move move) -> move.card.getCardLevel()).reversed());
@@ -47,7 +48,8 @@ public class EnemyAI {
 //            System.out.println("Cards in deck: " + newBoard.activeDeck.getCards().size());
 //            System.out.println("Empty slots: " + (9- newBoard.activeSlots.size()));
 //            System.out.println("Expected max moves: " + newBoard.activeDeck.getCards().size() * (9 - newBoard.activeSlots.size()));
-            int score = minimax(newBoard, dynamicDepth, Integer.MIN_VALUE, Integer.MAX_VALUE, true, startTime);
+            boolean isMaximizer = board.currentColor != Card.Color.BLUE;
+            int score = minimax(newBoard, dynamicDepth, Integer.MIN_VALUE, Integer.MAX_VALUE, isMaximizer, startTime);
             //System.out.println("Score= " + score);
             if(score > bestScore){
                 bestScore = score;
@@ -59,6 +61,7 @@ public class EnemyAI {
         long duration = (endTime - startTime) / 1000;
 
         System.out.println("Duration of Move: " + duration + " seconds");
+        System.out.println("Number of pruned moves: " + num_pruned);
         return bestMove;
     }
 
@@ -101,6 +104,7 @@ public class EnemyAI {
                 //System.out.println("maxEval = " + maxEval + " beta = " + beta);
                 if (alpha >= beta){
                     System.out.println("break occurred");
+                    num_pruned++;
                     return maxEval;
                 }
                 //alpha = Math.max(alpha, maxEval);
@@ -136,6 +140,7 @@ public class EnemyAI {
                 //System.out.println("minEval = " + minEval + " alpha = " + alpha);
                 if (beta <= alpha) {
                     System.out.println("break occurred");
+                    num_pruned++;
                     return minEval;
                 }
                 //beta = Math.min(beta, minEval);

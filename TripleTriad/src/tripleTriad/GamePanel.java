@@ -81,6 +81,15 @@ public class GamePanel extends JPanel implements Runnable {
 		if(!board.isGameOver()) {
 			// If game is NOT over
 			if(board.activeDeck.getPlayer() == 1) {
+				//	USE THIS BLOCK TO HAVE non-IDS AI PLAY AS BLUE
+				//	MUST COMMENT OUT USER INPUT CODE
+//				 Move enemyMove = enemy.findMove(board, enemy.depth);
+//				//Move enemyMove = enemy.findMoveIDS(board);
+//				board.playCard(enemyMove.card, enemyMove.slot);
+//				System.out.println("Enemy Score = " + board.getEnemyScore());
+
+
+				// User input for BLUE
 				if (mouse.pressed) {
 					// If mouse is pressed
 					if (activeCard == null) {
@@ -120,17 +129,13 @@ public class GamePanel extends JPanel implements Runnable {
 						isCollision = false;
 					}
 				}
+				// Comment out until here to comment out user input.
 			}
 			else {
+				//	findMove() used for non-IDS, findMoveIDS() used for IDS implementation
 				Move enemyMove = enemy.findMove(board, enemy.depth);
-				//Move enemyMove = enemy.findMoveIDS(board);
-				//Move enemyMove = board.getMoves().getLast();
+				// Move enemyMove = enemy.findMoveIDS(board);
 				board.playCard(enemyMove.card, enemyMove.slot);
-				for(GridSlot slot: board.gridSlots){
-					if(slot.getPosition() == 9 && enemyMove.slot.getPosition() == 9){
-						System.out.println(slot.isCardPlaced);
-					}
-				}
 				System.out.println("Enemy Score = " + board.getEnemyScore());
 			}
 		}
@@ -238,6 +243,11 @@ public class GamePanel extends JPanel implements Runnable {
 				g2.drawString(winner + " Wins!", 500, 850);
 			}
 			
+		}
+
+		// Display message when AI is searching for best move to make
+		if(board.activeDeck.deckColor == Card.Color.RED && !board.isGameOver()){
+			g2.drawString("RED is thinking...", 500, 750);
 		}
 		
 	}
